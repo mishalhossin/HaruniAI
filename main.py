@@ -47,7 +47,7 @@ async def generate_response(prompt):
 @bot.event
 async def on_ready():
     await bot.tree.sync()
-    await bot.change_presence(activity=discord.Game(name="Coded by Mishal#1916"))
+    await bot.change_presence(activity=discord.Game(name=f"Currently in {len(bot.guilds)} Guilds"))
     print(f"{bot.user.name} has connected to Discord!")
     invite_link = discord.utils.oauth_url(
         bot.user.id,
@@ -62,59 +62,77 @@ MAX_HISTORY = 20
 
 @bot.event
 async def on_message(message):
-  if message.author.bot:
-    author_id = str(bot.user.id)
-  else:
-    author_id = str(message.author.id)
-  await bot.process_commands(message)
-  
-  if message.channel.id in active_channels and not message.author.bot:
-    if author_id not in message_history:
-      message_history[author_id] = []
+    if message.author.bot:
+        return
 
-    message_history[author_id].append(f"\n{message.author.name}:{message.content}")
-  
-    message_history[author_id] = message_history[author_id][-MAX_HISTORY:]
-  
-    bot_prompt = f"System: {ERP}\n"
-    user_prompt = "\n".join(message_history[author_id])
-    prompt = f"{bot_prompt}\n\n{user_prompt}\n\n{bot.user.name}:"
-    async with message.channel.typing():
-      response = await generate_response(prompt)
-    message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    await message.reply(response)
-  
-  if message.channel.id in furry_channels and not message.author.bot:
-    bot_prompt = f"System: {FURRY}\n"
-    user_prompt = "\n".join(message_history[author_id])
-    prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-    async with message.channel.typing():
-      response = await generate_response(prompt)
-    message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    async with message.channel.typing():
-      await message.reply(response)
-  
-  if message.channel.id in sad_channels and not message.author.bot:
-    bot_prompt = f"System: {SAD}\n"
-    user_prompt = "\n".join(message_history[author_id])
-    prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-    async with message.channel.typing():
-      response = await generate_response(prompt)
-    message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    
-    await message.reply(response)
-  
-  if message.channel.id in assist_channels and not message.author.bot:
-    bot_prompt = f"System: {ASSIST}\n"
-    user_prompt = "\n".join(message_history[author_id])
-    prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-    async with message.channel.typing():
-      response = await generate_response(prompt)
-    message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    
-    await message.reply(response)
+    author_id = str(message.author.id)
+
+    await bot.process_commands(message)
+
+    key = f"{author_id}-{message.channel.id}"
+
+    if message.channel.id in active_channels and not message.author.bot:
+        if key not in message_history:
+            message_history[key] = []
+
+        message_history[key].append(f"\n{message.author.name}: {message.content}")
+        message_history[key] = message_history[key][-MAX_HISTORY:]
+
+        bot_prompt = f"System: {ERP}\n"
+        user_prompt = "\n".join(message_history[key])
+        prompt = f"{bot_prompt}\n\n{user_prompt}\n\n{bot.user.name}:"
+        async with message.channel.typing():
+            response = await generate_response(prompt)
+
+        message_history[key].append(f"\n{bot.user.name}: {message.content}")
+        await message.reply(response)
+
+    elif message.channel.id in furry_channels and not message.author.bot:
+        if key not in message_history:
+              message_history[key] = []
+        bot_prompt = f"System: {FURRY}\n"
+        user_prompt = "\n".join(message_history[key])
+        prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
+        async with message.channel.typing():
+            response = await generate_response(prompt)
+
+        message_history[key].append(f"\n{bot.user.name}: {message.content}")
+        async with message.channel.typing():
+            await message.reply(response)
+
+    elif message.channel.id in sad_channels and not message.author.bot:
+        if key not in message_history:
+              message_history[key] = []
+        bot_prompt = f"System: {SAD}\n"
+        user_prompt = "\n".join(message_history[key])
+        prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
+        async with message.channel.typing():
+            response = await generate_response(prompt)
+
+        message_history[key].append(f"\n{bot.user.name}: {message.content}")
+        await message.reply(response)
+
+    elif message.channel.id in assist_channels and not message.author.bot:
+        if key not in message_history:
+              message_history[key] = []
+        bot_prompt = f"System: {ASSIST}\n"
+        user_prompt = "\n".join(message_history[key])
+        prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
+        async with message.channel.typing():
+            response = await generate_response(prompt)
+
+        message_history[key].append(f"\n{bot.user.name}: {message.content}")
+        await message.reply(response)
+
+@bot.hybrid_command(name="bonk", description="clear message content")
+async def bonk(ctx):
+    message_history.clear()  # Reset the message history dictionary
+    message = await ctx.send(f"aww why would you do that bb")
+    await asyncio.sleep(3)
+    await message.delete()
 
 @bot.hybrid_command()
+@commands.is_owner()
 async def pfp(ctx, attachment_url : str):
   async with aiohttp.ClientSession() as session:
     async with session.get(attachment_url) as response:
