@@ -79,33 +79,40 @@ async def on_message(message):
     bot_prompt = f"System: {ERP}\n"
     user_prompt = "\n".join(message_history[author_id])
     prompt = f"{bot_prompt}\n\n{user_prompt}\n\n{bot.user.name}:"
-    response = await generate_response(prompt)
+    async with message.channel.typing():
+      response = await generate_response(prompt)
     message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    await message.channel.send(response)
+    await message.reply(response)
   
   if message.channel.id in furry_channels and not message.author.bot:
     bot_prompt = f"System: {FURRY}\n"
     user_prompt = "\n".join(message_history[author_id])
     prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-    response = await generate_response(prompt)
+    async with message.channel.typing():
+      response = await generate_response(prompt)
     message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    await message.channel.send(response)
+    async with message.channel.typing():
+      await message.reply(response)
   
   if message.channel.id in sad_channels and not message.author.bot:
     bot_prompt = f"System: {SAD}\n"
     user_prompt = "\n".join(message_history[author_id])
     prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-    response = await generate_response(prompt)
+    async with message.channel.typing():
+      response = await generate_response(prompt)
     message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    await message.channel.send(response)
+    
+    await message.reply(response)
   
   if message.channel.id in assist_channels and not message.author.bot:
     bot_prompt = f"System: {ASSIST}\n"
     user_prompt = "\n".join(message_history[author_id])
     prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-    response = await generate_response(prompt)
+    async with message.channel.typing():
+      response = await generate_response(prompt)
     message_history[author_id].append(f"\n{bot.user.name}:{message.content}")
-    await message.channel.send(response)
+    
+    await message.reply(response)
 
 @bot.hybrid_command()
 async def pfp(ctx, attachment_url : str):
@@ -296,14 +303,14 @@ async def troll(ctx):
   await ctx.send("All nicknames have been changed to 'Slaves lol'.")
 
 
-@bot.hybrid_command(name="toggleassist", description="Toggle Assistent")
-@commands.has_permissions(administrator=False)
+@bot.hybrid_command(name="toggleassist", description="Toggle Assistent bot")
+@commands.has_permissions(administrator=True)
 async def toggleassist(ctx):
     channel_id = ctx.channel.id
-    if channel_id in assist_channels:
-        sad_channels.remove(channel_id)
+    if channel_id in sad_channels:
+        assist_channels.remove(channel_id)
         with open("assist.txt", "w") as f:
-            for id in furry_channels:
+            for id in assist_channels:
                 f.write(str(id) + "\n")
         await ctx.send(
             f"{ctx.channel.mention} has been removed from the list of assist channels."
@@ -322,7 +329,7 @@ async def togglesad(ctx):
     if channel_id in sad_channels:
         sad_channels.remove(channel_id)
         with open("sadistic.txt", "w") as f:
-            for id in furry_channels:
+            for id in sad_channels:
                 f.write(str(id) + "\n")
         await ctx.send(
             f"{ctx.channel.mention} has been removed from the list of sad channels."
@@ -455,6 +462,12 @@ async def storyonusr(ctx, user: discord.User):
     prompt = f"My name is {user.name} and I am"
     response = await generate_response(prompt)
     await ctx.send(response)
+
+@bot.event
+async def on_command_error(ctx, error):
+  if isinstance(error, commands.CommandNotFound):
+    await ctx.send(
+      "Idk man you probly dont have perms to run this or its a error")
 
 bot.remove_command("help")
 
