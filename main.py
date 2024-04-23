@@ -60,64 +60,39 @@ async def on_ready():
 message_history = {}
 MAX_HISTORY = 20
 
+SYSTEM_PROMPTS = {
+    "active_channels": "System: {ERP}\n",
+    "furry_channels": "System: {FURRY}\n",
+    "sad_channels": "System: {SAD}\n",
+    "assist_channels": "System: {ASSIST}\n"
+}
+
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
-
     author_id = str(message.author.id)
-
-    await bot.process_commands(message)
-
     key = f"{author_id}-{message.channel.id}"
 
-    if message.channel.id in active_channels and not message.author.bot:
+    if not message.author.bot:
+        if message.channel.id in active_channels:
+            system_prompt = SYSTEM_PROMPTS["active_channels"]
+        elif message.channel.id in furry_channels:
+            system_prompt = SYSTEM_PROMPTS["furry_channels"]
+        elif message.channel.id in sad_channels:
+            system_prompt = SYSTEM_PROMPTS["sad_channels"]
+        elif message.channel.id in assist_channels:
+            system_prompt = SYSTEM_PROMPTS["assist_channels"]
+        else:
+            return
+
         if key not in message_history:
             message_history[key] = []
 
-        message_history[key].append(f"\n{message.author.name}: {message.content}")
-        message_history[key] = message_history[key][-MAX_HISTORY:]
-
-        bot_prompt = f"System: {ERP}\n"
+        bot_prompt = system_prompt.format(**locals())
         user_prompt = "\n".join(message_history[key])
         prompt = f"{bot_prompt}\n\n{user_prompt}\n\n{bot.user.name}:"
-        async with message.channel.typing():
-            response = await generate_response(prompt)
 
-        message_history[key].append(f"\n{bot.user.name}: {message.content}")
-        await message.reply(response)
-
-    elif message.channel.id in furry_channels and not message.author.bot:
-        if key not in message_history:
-              message_history[key] = []
-        bot_prompt = f"System: {FURRY}\n"
-        user_prompt = "\n".join(message_history[key])
-        prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-        async with message.channel.typing():
-            response = await generate_response(prompt)
-
-        message_history[key].append(f"\n{bot.user.name}: {message.content}")
-        async with message.channel.typing():
-            await message.reply(response)
-
-    elif message.channel.id in sad_channels and not message.author.bot:
-        if key not in message_history:
-              message_history[key] = []
-        bot_prompt = f"System: {SAD}\n"
-        user_prompt = "\n".join(message_history[key])
-        prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
-        async with message.channel.typing():
-            response = await generate_response(prompt)
-
-        message_history[key].append(f"\n{bot.user.name}: {message.content}")
-        await message.reply(response)
-
-    elif message.channel.id in assist_channels and not message.author.bot:
-        if key not in message_history:
-              message_history[key] = []
-        bot_prompt = f"System: {ASSIST}\n"
-        user_prompt = "\n".join(message_history[key])
-        prompt = f"{bot_prompt}{user_prompt}\n\n{bot.user.name}:"
         async with message.channel.typing():
             response = await generate_response(prompt)
 
@@ -127,7 +102,7 @@ async def on_message(message):
 @bot.hybrid_command(name="bonk", description="clear message content")
 async def bonk(ctx):
     message_history.clear()  # Reset the message history dictionary
-    message = await ctx.send(f"aww why would you do that bb")
+    message = await ctx.send("aww why would you do that bb")
     await asyncio.sleep(3)
     await message.delete()
 
@@ -306,19 +281,6 @@ async def banrole(ctx, role_id):
   await ctx.send(
     f"Banned {len(banned_members)} members with the {role.name} role!")
   await ctx.send(f"List of banned members: {', '.join(banned_members)}")
-
-
-@bot.hybrid_command()
-@commands.is_owner()
-async def troll(ctx):
-  for member in ctx.guild.members:
-    try:
-      await member.edit(nick="Slaves lol")
-      await asyncio.sleep(
-        1)  # Wait for 1 second before changing the next nickname
-    except:
-      pass
-  await ctx.send("All nicknames have been changed to 'Slaves lol'.")
 
 
 @bot.hybrid_command(name="toggleassist", description="Toggle Assistent bot")

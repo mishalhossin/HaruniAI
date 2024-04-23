@@ -5,7 +5,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def main():
-    html = f'''
+    html = \
+    '''
     <!DOCTYPE html>
     <html lang="en">
     <head>
